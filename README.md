@@ -1,4 +1,4 @@
-# Discord Hololive Music YouTube Bot
+# Discord Hololive Music YouTube Bot!
 
 A Discord bot that monitors Hololive member YouTube channels and automatically posts notifications when they upload new music videos or covers.
 
