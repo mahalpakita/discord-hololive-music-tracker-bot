@@ -4,11 +4,14 @@ A Discord bot that monitors Hololive member YouTube channels and automatically p
 
 ## Features
 
-- 🎵 **Music Detection**: Automatically filters and detects only music videos and covers (ignores streams, gaming videos, etc.)
+- 🎵 **Music Detection**: Automatically filters and detects only music videos and covers (ignores streams, gaming videos, shorts, and live streams)
 - 🌐 **Multi-language Support**: Recognizes music keywords in both English and Japanese
 - ⏰ **Automatic Monitoring**: Checks for new uploads every 5 minutes
 - 🎶 **Smart Filtering**: Distinguishes between covers and original music videos
 - 📝 **Duplicate Prevention**: Prevents spam by tracking already posted videos
+- 🎬 **Playable Videos**: Videos are playable directly in Discord
+- 📬 **Catch-up Mode**: Automatically catches up on missed videos when the bot restarts
+- 🎨 **Beautiful Embeds**: Rich Discord embeds with thumbnails, descriptions, and metadata
 
 ## Prerequisites
 
@@ -32,11 +35,41 @@ A Discord bot that monitors Hololive member YouTube channels and automatically p
    DISCORD_CHANNEL_ID=your_discord_channel_id
    ```
 
-3. **Get a Discord Bot Token:**
+3. **Create and Add Discord Bot:**
+   
+   **Step 1: Create the Bot Application**
    - Go to [Discord Developer Portal](https://discord.com/developers/applications)
-   - Create a new application
-   - Go to "Bot" section and create a bot
-   - Copy the token and add it to `dev.env`
+   - Click "New Application"
+   - Give it a name (e.g., "Hololive Music Bot")
+   - Click "Create"
+   
+   **Step 2: Create the Bot**
+   - Go to the "Bot" section in the left sidebar
+   - Click "Add Bot" → "Yes, do it!"
+   - Under "Privileged Gateway Intents", enable:
+     - ✅ Server Members Intent (if needed)
+   - Under "Token", click "Reset Token" or "Copy" to get your bot token
+   - **Important:** Save this token! You won't be able to see it again.
+   - Add the token to `dev.env` as `DISCORD_TOKEN`
+   
+   **Step 3: Set Bot Permissions**
+   - Go to the "OAuth2" → "URL Generator" section
+   - Under "Scopes", select:
+     - ✅ `bot`
+     - ✅ `applications.commands` (optional, for future slash commands)
+   - Under "Bot Permissions", select:
+     - ✅ Send Messages
+     - ✅ Embed Links
+     - ✅ Attach Files (optional)
+     - ✅ Read Message History (optional)
+   - Copy the generated URL at the bottom
+   
+   **Step 4: Invite Bot to Your Server**
+   - Open the generated URL in your browser
+   - Select the Discord server where you want to add the bot
+   - Click "Authorize"
+   - Complete any CAPTCHA if prompted
+   - The bot should now appear in your server's member list (offline until you run it)
 
 4. **Get a YouTube API Key:**
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
@@ -72,13 +105,18 @@ The bot will:
 
 ## How It Works
 
-1. The bot checks the 10 most recent videos from each configured channel
-2. Filters videos to find only music-related content (covers, original songs, etc.)
-3. Compares with previously posted videos to avoid duplicates
-4. Posts a notification to your Discord channel with:
-   - 🎵 for covers
-   - 🎶 for original music videos
-   - Video title and link
+1. The bot checks the 50 most recent videos from each configured channel
+2. Filters out live streams, shorts, and non-music content
+3. Identifies music videos using:
+   - Keyword matching (title/description)
+   - YouTube Music category detection
+4. Compares with previously posted videos to avoid duplicates
+5. Posts notifications to your Discord channel with:
+   - 🎵 Playable YouTube embed (click to play in Discord)
+   - 🎨 Rich embed with thumbnail, description, and metadata
+   - 🎵 Pink color for covers
+   - 🎶 Cyan color for original music videos
+6. **Catch-up Mode**: When the bot restarts, it automatically finds and posts all missed videos in chronological order
 
 ## Music Detection Keywords
 
@@ -103,13 +141,35 @@ The bot recognizes music videos using these keywords:
 - The `dev.env` file is gitignored for security
 - `lastVideos.json` is automatically created to track posted videos
 - The bot checks every 5 minutes (configurable in the cron schedule)
-- Non-music videos (streams, gaming, etc.) are automatically filtered out
+- Non-music videos (streams, gaming, shorts, live streams) are automatically filtered out
+- Videos are posted with playable embeds - click the video to play directly in Discord
+- On first run, the bot only posts the most recent music video to establish a baseline
+- Subsequent runs will catch up on any missed videos automatically
 
 ## Troubleshooting
 
-- **Bot not posting**: Check that the bot has permission to send messages in the channel
-- **Missing videos**: Ensure the YouTube API key has proper quotas and permissions
-- **Duplicate posts**: Delete `bot/lastVideos.json` to reset tracking (will repost recent videos)
+- **Bot not posting**: 
+  - Check that the bot has permission to send messages in the channel
+  - Verify the bot is online (check the member list in Discord)
+  - Ensure the `DISCORD_CHANNEL_ID` is correct
+  
+- **403 Forbidden Error**: 
+  - Your YouTube API quota may be exceeded (free tier: 10,000 units/day)
+  - Check your API key is valid and not restricted
+  - Verify API key restrictions in Google Cloud Console
+  - With 60 channels checking every 5 minutes, you may need to increase quota or reduce check frequency
+  
+- **Missing videos**: 
+  - Ensure the YouTube API key has proper quotas and permissions
+  - Check console logs for error messages
+  - Videos must be longer than 60 seconds (shorts are filtered out)
+  
+- **Duplicate posts**: 
+  - Delete `bot/lastVideos.json` to reset tracking (will repost recent videos on next check)
+  
+- **Videos not playable**: 
+  - Ensure the bot has "Embed Links" permission
+  - The YouTube URL is sent first to create the playable embed
 
 ## License
 
