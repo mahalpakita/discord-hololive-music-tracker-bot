@@ -171,6 +171,3 @@ The bot recognizes music videos using these keywords:
   - Ensure the bot has "Embed Links" permission
   - The YouTube URL is sent first to create the playable embed
 
-## License
-
-MIT
