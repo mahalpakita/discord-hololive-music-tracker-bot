@@ -1,5 +1,5 @@
 require("dotenv").config({ path: "./dev.env" });
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 const axios = require("axios");
 const cron = require("node-cron");
 const fs = require("fs");
@@ -148,9 +148,51 @@ function isMusicCategoryMatch(details) {
   return isMusicCategory || isMusicTopic;
 }
 
+// Post a video with a beautiful embed
+async function postVideo(videoItem, videoDetails, channel, isCatchUp = false) {
+  const discordChannel = await client.channels.fetch(DISCORD_CHANNEL_ID);
+  if (!discordChannel) {
+    throw new Error(`Channel ${DISCORD_CHANNEL_ID} not found!`);
+  }
+
+  const videoId = videoItem.id.videoId;
+  const snippet = videoDetails?.snippet || videoItem.snippet;
+  const title = snippet.title;
+  const description = snippet.description || "";
+  const thumbnail = snippet.thumbnails?.maxres?.url || snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url;
+  const publishedAt = new Date(snippet.publishedAt);
+  const videoUrl = `https://youtu.be/${videoId}`;
+
+  // Determine if it's a cover or original
+  const titleLower = title.toLowerCase();
+  const isCover = titleLower.includes("cover") || titleLower.includes("カバー") || 
+                  titleLower.includes("歌ってみた") || titleLower.includes("vocal cover");
+  
+  // Create embed
+  const embed = new EmbedBuilder()
+    .setColor(isCover ? 0xFF6B9D : 0x00D9FF) // Pink for covers, Cyan for originals
+    .setTitle(title)
+    .setURL(videoUrl)
+    .setAuthor({ 
+      name: channel.name
+    })
+    .setDescription(description.length > 200 ? description.substring(0, 200) + "..." : description || "No description available")
+    .setImage(thumbnail)
+    .addFields(
+      { name: "Type", value: isCover ? "🎵 Cover" : "🎶 Original Music", inline: true },
+      { name: "Published", value: `<t:${Math.floor(publishedAt.getTime() / 1000)}:R>`, inline: true },
+      { name: "Video", value: `[Watch on YouTube](${videoUrl})`, inline: true }
+    )
+    .setFooter({ text: isCatchUp ? "📬 Caught up on missed video" : "✨ New upload detected" })
+    .setTimestamp(publishedAt);
+
+  await discordChannel.send({ embeds: [embed] });
+  console.log(`✅ Posted ${isCover ? "cover" : "music video"} from ${channel.name}: ${title}`);
+}
+
 async function checkChannel(channel) {
-  // Get more results to find music videos (in case latest isn't music)
-  const url = `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${channel.channelId}&part=snippet,id&order=date&maxResults=10&type=video`;
+  // Get more results to catch up on missed videos (increased from 10 to 50)
+  const url = `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${channel.channelId}&part=snippet,id&order=date&maxResults=50&type=video`;
 
   const res = await axios.get(url);
   
@@ -159,74 +201,78 @@ async function checkChannel(channel) {
     return;
   }
   
-  // Collect candidates and prefer keyword hits first
-  let musicVideo = null;
+  // Collect all music video candidates
   const candidates = [];
+  const videoIds = [];
 
   for (const item of res.data.items) {
     if (item.id.kind !== "youtube#video") continue;
-
-    const videoId = item.id.videoId;
-    const keywordHit = isMusicKeywordHit(item);
-    candidates.push({ item, videoId, keywordHit });
-
-    if (keywordHit) {
-      musicVideo = item; // most recent keyword match
-      break;
-    }
+    videoIds.push(item.id.videoId);
+    candidates.push(item);
   }
 
-  // If no keyword hit, fall back to Music category/topic detection
-  if (!musicVideo && candidates.length > 0) {
-    const ids = candidates.map((c) => c.videoId).join(",");
-    const detailsRes = await axios.get(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet,topicDetails&id=${ids}&key=${YOUTUBE_API_KEY}`
-    );
-
-    const detailMap = new Map();
-    for (const d of detailsRes.data.items || []) {
-      detailMap.set(d.id, d);
-    }
-
-    for (const candidate of candidates) {
-      const details = detailMap.get(candidate.videoId);
-      if (isMusicCategoryMatch(details)) {
-        musicVideo = candidate.item;
-        break;
-      }
-    }
-  }
-
-  // If still no music video found, skip
-  if (!musicVideo) return;
-
-  const videoId = musicVideo.id.videoId;
-
-  // Skip if this is the same video we already notified about
-  if (lastVideos[channel.channelId] === videoId) return;
-
-  // Save the new video ID
-  lastVideos[channel.channelId] = videoId;
-  fs.writeFileSync(DATA_FILE, JSON.stringify(lastVideos, null, 2));
-
-  // Send notification to Discord
-  const discordChannel = await client.channels.fetch(DISCORD_CHANNEL_ID);
-  if (!discordChannel) {
-    throw new Error(`Channel ${DISCORD_CHANNEL_ID} not found!`);
-  }
+  // Get detailed information for all candidates
+  if (videoIds.length === 0) return;
   
-  // Determine if it's a cover or original
-  const title = musicVideo.snippet.title.toLowerCase();
-  const isCover = title.includes("cover") || title.includes("カバー") || 
-                  title.includes("歌ってみた") || title.includes("vocal cover");
-  const emoji = isCover ? "🎵" : "🎶";
-  const type = isCover ? "Cover" : "Music Video";
-  
-  await discordChannel.send(
-    `${emoji} **New ${type} from ${channel.name}!**\n**${musicVideo.snippet.title}**\nhttps://youtu.be/${videoId}`
+  const ids = videoIds.join(",");
+  const detailsRes = await axios.get(
+    `https://www.googleapis.com/youtube/v3/videos?part=snippet,topicDetails&id=${ids}&key=${YOUTUBE_API_KEY}`
   );
-  
-  console.log(`✅ Posted new ${type.toLowerCase()} from ${channel.name}: ${musicVideo.snippet.title}`);
+
+  const detailMap = new Map();
+  for (const d of detailsRes.data.items || []) {
+    detailMap.set(d.id, d);
+  }
+
+  // Find all music videos
+  const musicVideos = [];
+  const lastVideoId = lastVideos[channel.channelId];
+  const isFirstRun = !lastVideoId; // First time checking this channel
+
+  for (const item of candidates) {
+    const videoId = item.id.videoId;
+    const details = detailMap.get(videoId);
+    
+    // On first run, only get the most recent music video to avoid spamming old videos
+    if (isFirstRun && musicVideos.length > 0) break;
+    
+    // Skip if this is the last video we already posted
+    if (lastVideoId === videoId) break;
+    
+    const keywordHit = isMusicKeywordHit(item);
+    const categoryMatch = details ? isMusicCategoryMatch(details) : false;
+    
+    if (keywordHit || categoryMatch) {
+      // Add publish date for sorting
+      const publishDate = new Date(item.snippet.publishedAt);
+      musicVideos.push({ item, details, videoId, publishDate });
+    }
+  }
+
+  // If no music videos found, skip
+  if (musicVideos.length === 0) return;
+
+  // Sort by publish date (oldest first) to post in chronological order
+  musicVideos.sort((a, b) => a.publishDate - b.publishDate);
+
+  // Post all missed videos in order
+  for (let i = 0; i < musicVideos.length; i++) {
+    const { item, details, videoId } = musicVideos[i];
+    const isCatchUp = i < musicVideos.length - 1; // All except the newest are catch-ups
+    
+    await postVideo(item, details, channel, isCatchUp);
+    
+    // Small delay between posts to avoid rate limiting
+    if (i < musicVideos.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+    }
+    
+    // Update last video ID after each post
+    lastVideos[channel.channelId] = videoId;
+  }
+
+  // Save the latest video ID
+  fs.writeFileSync(DATA_FILE, JSON.stringify(lastVideos, null, 2));
 }
 
 // Run every 5 minutes
