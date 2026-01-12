@@ -231,96 +231,139 @@ async function postVideo(videoItem, videoDetails, channel, isCatchUp = false) {
     .setFooter({ text: isCatchUp ? "📬 Caught up on missed video" : "✨ New upload detected" })
     .setTimestamp(publishedAt);
 
+  // Send the YouTube URL first so Discord auto-embeds it and makes it playable
+  // Then send our custom embed for additional info
+  await discordChannel.send(videoUrl);
   await discordChannel.send({ embeds: [embed] });
   console.log(`✅ Posted ${isCover ? "cover" : "music video"} from ${channel.name}: ${title}`);
 }
 
 async function checkChannel(channel) {
-  // Get more results to catch up on missed videos (increased from 10 to 50)
-  const url = `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${channel.channelId}&part=snippet,id&order=date&maxResults=50&type=video`;
+  try {
+    // Get more results to catch up on missed videos (increased from 10 to 50)
+    const url = `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${channel.channelId}&part=snippet,id&order=date&maxResults=50&type=video`;
 
-  const res = await axios.get(url);
-  
-  // Check if API returned any items
-  if (!res.data.items || res.data.items.length === 0) {
-    return;
-  }
-  
-  // Collect all music video candidates
-  const candidates = [];
-  const videoIds = [];
-
-  for (const item of res.data.items) {
-    if (item.id.kind !== "youtube#video") continue;
-    videoIds.push(item.id.videoId);
-    candidates.push(item);
-  }
-
-  // Get detailed information for all candidates
-  if (videoIds.length === 0) return;
-  
-  const ids = videoIds.join(",");
-  const detailsRes = await axios.get(
-    `https://www.googleapis.com/youtube/v3/videos?part=snippet,topicDetails,contentDetails&id=${ids}&key=${YOUTUBE_API_KEY}`
-  );
-
-  const detailMap = new Map();
-  for (const d of detailsRes.data.items || []) {
-    detailMap.set(d.id, d);
-  }
-
-  // Find all music videos
-  const musicVideos = [];
-  const lastVideoId = lastVideos[channel.channelId];
-  const isFirstRun = !lastVideoId; // First time checking this channel
-
-  for (const item of candidates) {
-    const videoId = item.id.videoId;
-    const details = detailMap.get(videoId);
+    const res = await axios.get(url);
     
-    // Skip if not a regular video (exclude live streams and shorts)
-    if (!isRegularVideo(item, details)) continue;
-    
-    // On first run, only get the most recent music video to avoid spamming old videos
-    if (isFirstRun && musicVideos.length > 0) break;
-    
-    // Skip if this is the last video we already posted
-    if (lastVideoId === videoId) break;
-    
-    const keywordHit = isMusicKeywordHit(item);
-    const categoryMatch = details ? isMusicCategoryMatch(details) : false;
-    
-    if (keywordHit || categoryMatch) {
-      // Add publish date for sorting
-      const publishDate = new Date(item.snippet.publishedAt);
-      musicVideos.push({ item, details, videoId, publishDate });
-    }
-  }
-
-  // If no music videos found, skip
-  if (musicVideos.length === 0) return;
-
-  // Sort by publish date (oldest first) to post in chronological order
-  musicVideos.sort((a, b) => a.publishDate - b.publishDate);
-
-  // Post all missed videos in order
-  for (let i = 0; i < musicVideos.length; i++) {
-    const { item, details, videoId } = musicVideos[i];
-    const isCatchUp = i < musicVideos.length - 1; // All except the newest are catch-ups
-    
-    await postVideo(item, details, channel, isCatchUp);
-    
-    // Small delay between posts to avoid rate limiting
-    if (i < musicVideos.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+    // Check if API returned any items
+    if (!res.data.items || res.data.items.length === 0) {
+      return;
     }
     
-    // Update last video ID after each post
-    lastVideos[channel.channelId] = videoId;
-  }
+    // Collect all music video candidates
+    const candidates = [];
+    const videoIds = [];
 
-  // Save the latest video ID
-  fs.writeFileSync(DATA_FILE, JSON.stringify(lastVideos, null, 2));
+    for (const item of res.data.items) {
+      if (item.id.kind !== "youtube#video") continue;
+      videoIds.push(item.id.videoId);
+      candidates.push(item);
+    }
+
+    // Get detailed information for all candidates
+    if (videoIds.length === 0) return;
+    
+    const ids = videoIds.join(",");
+    let detailsRes;
+    try {
+      detailsRes = await axios.get(
+        `https://www.googleapis.com/youtube/v3/videos?part=snippet,topicDetails,contentDetails&id=${ids}&key=${YOUTUBE_API_KEY}`
+      );
+    } catch (error) {
+      if (error.response) {
+        if (error.response.status === 403) {
+          console.error(`❌ 403 Forbidden for ${channel.name} (video details): ${error.response.data?.error?.message || 'API quota exceeded or key invalid'}`);
+        } else {
+          console.error(`❌ API Error for ${channel.name} (video details): ${error.response.status} - ${error.response.data?.error?.message || error.message}`);
+        }
+      } else {
+        console.error(`❌ Network Error for ${channel.name} (video details):`, error.message);
+      }
+      return;
+    }
+
+    const detailMap = new Map();
+    for (const d of detailsRes.data.items || []) {
+      detailMap.set(d.id, d);
+    }
+
+    // Find all music videos
+    const musicVideos = [];
+    const lastVideoId = lastVideos[channel.channelId];
+    const isFirstRun = !lastVideoId; // First time checking this channel
+
+    for (const item of candidates) {
+      const videoId = item.id.videoId;
+      const details = detailMap.get(videoId);
+      
+      // Skip if not a regular video (exclude live streams and shorts)
+      if (!isRegularVideo(item, details)) continue;
+      
+      // On first run, only get the most recent music video to avoid spamming old videos
+      if (isFirstRun && musicVideos.length > 0) break;
+      
+      // Skip if this is the last video we already posted
+      if (lastVideoId === videoId) break;
+      
+      const keywordHit = isMusicKeywordHit(item);
+      const categoryMatch = details ? isMusicCategoryMatch(details) : false;
+      
+      if (keywordHit || categoryMatch) {
+        // Add publish date for sorting
+        const publishDate = new Date(item.snippet.publishedAt);
+        musicVideos.push({ item, details, videoId, publishDate });
+      }
+    }
+
+    // If no music videos found, skip
+    if (musicVideos.length === 0) return;
+
+    // Sort by publish date (oldest first) to post in chronological order
+    musicVideos.sort((a, b) => a.publishDate - b.publishDate);
+
+    // Post all missed videos in order
+    for (let i = 0; i < musicVideos.length; i++) {
+      const { item, details, videoId } = musicVideos[i];
+      const isCatchUp = i < musicVideos.length - 1; // All except the newest are catch-ups
+      
+      await postVideo(item, details, channel, isCatchUp);
+      
+      // Small delay between posts to avoid rate limiting
+      if (i < musicVideos.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+      }
+      
+      // Update last video ID after each post
+      lastVideos[channel.channelId] = videoId;
+    }
+
+    // Save the latest video ID
+    fs.writeFileSync(DATA_FILE, JSON.stringify(lastVideos, null, 2));
+  } catch (error) {
+    if (error.response) {
+      // API responded with error
+      if (error.response.status === 403) {
+        const errorMessage = error.response.data?.error?.message || 'API quota exceeded or key invalid';
+        console.error(`❌ 403 Forbidden for ${channel.name}: ${errorMessage}`);
+        if (error.response.data?.error?.errors) {
+          error.response.data.error.errors.forEach(err => {
+            console.error(`   Reason: ${err.reason}, Domain: ${err.domain}`);
+          });
+        }
+      } else if (error.response.status === 404) {
+        console.error(`❌ 404 Not Found for ${channel.name}: Channel may not exist or be private`);
+      } else if (error.response.status === 400) {
+        console.error(`❌ 400 Bad Request for ${channel.name}: ${error.response.data?.error?.message || error.message}`);
+      } else {
+        console.error(`❌ API Error for ${channel.name}: ${error.response.status} - ${error.response.data?.error?.message || error.message}`);
+      }
+    } else if (error.request) {
+      console.error(`❌ Network Error for ${channel.name}: No response from YouTube API`);
+    } else {
+      console.error(`❌ Error for ${channel.name}:`, error.message);
+    }
+    return; // Skip this channel on error
+  }
 }
 
 // Run every 5 minutes
