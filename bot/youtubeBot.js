@@ -148,6 +148,51 @@ function isMusicCategoryMatch(details) {
   return isMusicCategory || isMusicTopic;
 }
 
+// Check if video is a regular video (not live stream or short)
+function isRegularVideo(item, details) {
+  if (!item || !item.snippet) return false;
+  
+  // Exclude live streams (live, upcoming, or past live)
+  const liveBroadcastContent = item.snippet.liveBroadcastContent;
+  if (liveBroadcastContent && liveBroadcastContent !== "none") {
+    return false; // It's a live stream or upcoming live
+  }
+  
+  // Exclude YouTube Shorts
+  const title = item.snippet.title.toLowerCase();
+  const description = (item.snippet.description || "").toLowerCase();
+  const videoId = item.id.videoId;
+  
+  // Check for #shorts in title or description
+  if (title.includes("#shorts") || description.includes("#shorts")) {
+    return false;
+  }
+  
+  // Check if URL would be a shorts URL (though we use videoId, shorts have specific pattern)
+  // Shorts are typically under 60 seconds, but we'll rely on title/description check
+  // Also check video duration if available in details
+  if (details && details.contentDetails) {
+    const duration = details.contentDetails.duration;
+    if (duration) {
+      // Parse ISO 8601 duration (e.g., PT1M30S = 1 minute 30 seconds)
+      const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (match) {
+        const hours = parseInt(match[1] || 0);
+        const minutes = parseInt(match[2] || 0);
+        const seconds = parseInt(match[3] || 0);
+        const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+        
+        // Shorts are typically 60 seconds or less
+        if (totalSeconds <= 60) {
+          return false;
+        }
+      }
+    }
+  }
+  
+  return true; // It's a regular video
+}
+
 // Post a video with a beautiful embed
 async function postVideo(videoItem, videoDetails, channel, isCatchUp = false) {
   const discordChannel = await client.channels.fetch(DISCORD_CHANNEL_ID);
@@ -216,7 +261,7 @@ async function checkChannel(channel) {
   
   const ids = videoIds.join(",");
   const detailsRes = await axios.get(
-    `https://www.googleapis.com/youtube/v3/videos?part=snippet,topicDetails&id=${ids}&key=${YOUTUBE_API_KEY}`
+    `https://www.googleapis.com/youtube/v3/videos?part=snippet,topicDetails,contentDetails&id=${ids}&key=${YOUTUBE_API_KEY}`
   );
 
   const detailMap = new Map();
@@ -232,6 +277,9 @@ async function checkChannel(channel) {
   for (const item of candidates) {
     const videoId = item.id.videoId;
     const details = detailMap.get(videoId);
+    
+    // Skip if not a regular video (exclude live streams and shorts)
+    if (!isRegularVideo(item, details)) continue;
     
     // On first run, only get the most recent music video to avoid spamming old videos
     if (isFirstRun && musicVideos.length > 0) break;
