@@ -1,4 +1,4 @@
-# Discord Hololive Music YouTube Bot
+# Discord Hololive Music YouTube Bot!
 
 A Discord bot that monitors Hololive member YouTube channels and automatically posts notifications when they upload new music videos or covers.
 
@@ -34,42 +34,6 @@ A Discord bot that monitors Hololive member YouTube channels and automatically p
    YOUTUBE_API_KEY=your_youtube_api_key
    DISCORD_CHANNEL_ID=your_discord_channel_id
    ```
-
-3. **Create and Add Discord Bot:**
-   
-   **Step 1: Create the Bot Application**
-   - Go to [Discord Developer Portal](https://discord.com/developers/applications)
-   - Click "New Application"
-   - Give it a name (e.g., "Hololive Music Bot")
-   - Click "Create"
-   
-   **Step 2: Create the Bot**
-   - Go to the "Bot" section in the left sidebar
-   - Click "Add Bot" → "Yes, do it!"
-   - Under "Privileged Gateway Intents", enable:
-     - ✅ Server Members Intent (if needed)
-   - Under "Token", click "Reset Token" or "Copy" to get your bot token
-   - **Important:** Save this token! You won't be able to see it again.
-   - Add the token to `dev.env` as `DISCORD_TOKEN`
-   
-   **Step 3: Set Bot Permissions**
-   - Go to the "OAuth2" → "URL Generator" section
-   - Under "Scopes", select:
-     - ✅ `bot`
-     - ✅ `applications.commands` (optional, for future slash commands)
-   - Under "Bot Permissions", select:
-     - ✅ Send Messages
-     - ✅ Embed Links
-     - ✅ Attach Files (optional)
-     - ✅ Read Message History (optional)
-   - Copy the generated URL at the bottom
-   
-   **Step 4: Invite Bot to Your Server**
-   - Open the generated URL in your browser
-   - Select the Discord server where you want to add the bot
-   - Click "Authorize"
-   - Complete any CAPTCHA if prompted
-   - The bot should now appear in your server's member list (offline until you run it)
 
 4. **Get a YouTube API Key:**
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
@@ -171,6 +135,5 @@ The bot recognizes music videos using these keywords:
   - Ensure the bot has "Embed Links" permission
   - The YouTube URL is sent first to create the playable embed
 
-## License
 
-MIT
+
