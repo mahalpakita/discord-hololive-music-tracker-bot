@@ -13,71 +13,28 @@ const {
 // Add YouTube channels here (Hololive members)
 const YOUTUBE_CHANNELS = [
   // Hololive JP Gen 0-1
-  { name: "Tokino Sora", channelId: "UCp6993wxpyDPHUpavwDFqgg" },
-  { name: "Robocosan", channelId: "UCDqI2jOz0weumE8s7paEk6g" },
   { name: "Hoshimachi Suisei", channelId: "UC5CwaMl1eIgY8h02uZw7u8A" },
   { name: "Sakura Miko", channelId: "UC-hM6YJuNYVAmUWxeIr9FeA" },
   { name: "AZKi", channelId: "UC0TXe_LYZ4scaW2XMyi5_kw" },
   { name: "Shirakami Fubuki", channelId: "UCdn5BQ06XqgXoAxIhbqw5Rg" },
   { name: "Natsuiro Matsuri", channelId: "UCQ0UDLQCjY0rmuxCDE38FGg" },
   { name: "Akai Haato / Haachama", channelId: "UC1CfXB_kRs3C-zaeTG3oGyg" },
-  { name: "Aki Rosenthal", channelId: "UCFTLzh12_nrtzqBPsTCqenA" },
   { name: "Nakiri Ayame", channelId: "UC7fk0CB07ly8oSl0aqKkqFg" },
-  { name: "Yuzuki Choco", channelId: "UC1suqwovbL1kzsoaZgFZLKg" },
   { name: "Oozora Subaru", channelId: "UCvzGlP9oQwU--Y0r9id_jnA" },
-  { name: "Ookami Mio", channelId: "UCp-5t9SrOQwXMU7iIjQfARg" },
   { name: "Nekomata Okayu", channelId: "UCvaTdHTWBGv3MKj3KVqJVCw" },
   { name: "Usada Pekora", channelId: "UC1DCedRgGHBdm81E1llLhOQ" },
   { name: "Houshou Marine", channelId: "UCCzUftO8KOVkV4wQG1vkUvg" },
-  { name: "Shiranui Flare", channelId: "UCvInZx9h3jC2JzsIzoOebWg" },
-  { name: "Shirogane Noel", channelId: "UCdyqAaZDKHXg4Ahi7VENThQ" },
   { name: "Tsunomaki Watame", channelId: "UCqm3BQLlJfvkTsX_hvm0UmA" },
   { name: "Tokoyami Towa", channelId: "UC1uv2Oq6kNxgATlCiez59hw" },
   { name: "Himemori Luna", channelId: "UCa9Y57gfeY0Zro_noHRVrnw" },
   { name: "Momosuzu Nene", channelId: "UCAWSyEs_Io8MtpY3m-zqILA" },
-  { name: "Omaru Polka", channelId: "UCK9V2B22uJYu3N7eR_BT9QA" },
-  { name: "Shishiro Botan", channelId: "UCUKD-uaobj9jiqB-VXt71mA" },
   { name: "Yukihana Lamy", channelId: "UCFKOVgVbGmX65RxO3EtH3iw" },
   { name: "La+ Darknesss", channelId: "UCENwRMx5Yh42zWpzURebzTw" },
-  { name: "Takane Lui", channelId: "UCs9_O1tRPMQTHQ-N_L6FU2g" },
-  { name: "Sakamata Chloe", channelId: "UCIBY1ollUsauvVi4hW4cumw" },
   { name: "Hakui Koyori", channelId: "UC6eWCld0KwmyHFbAqK3V-Rw" },
   { name: "Kazama Iroha", channelId: "UC_vMYWcDjmfdpH6r4TTn1MQ" },
-  { name: "Otonose Kanade", channelId: "UCWQtYtq9EOB4-I5P-3fh8lA" },
-  { name: "Ichijou Ririka", channelId: "UCtyWhCj3AqKh2dXctLkDtng" },
-  { name: "Juufuutei Raden", channelId: "UCdXAk5MpyLD8594lm_OvtGQ" },
-  { name: "Todoroki Hajime", channelId: "UC1iA6_NT4mtAcIII6ygrvCw" },
   { name: "Kikirara Vivi", channelId: "UCGzTVXqMQHa4AgJVJIVvtDQ" },
-  { name: "Isaki Riona", channelId: "UC9LSiN9hXI55svYEBrrK-tw" },
-  { name: "Koganei Niko", channelId: "UCuI_opAVX6qbxZY-a-AxFuQ" },
   { name: "Mizumiya Su", channelId: "UCjk2nKmHzgH5Xy-C5qYRd5A" },
-  { name: "Rindo Chihaya", channelId: "UCKMWFR6lAstLa7Vbf5dH7ig" },
-  // Hololive ID
-  { name: "Ayunda Risu", channelId: "UCOyYb1c43VlX9rc_lT6NKQw" },
-  { name: "Moona Hoshinova", channelId: "UCP0BspO_AMEe3aQqqpo89Dg" },
-  { name: "Airani Iofifteen", channelId: "UCAoy6rzhSf4ydcYjJw3WoVg" },
-  { name: "Kureiji Ollie", channelId: "UCYz_5n-uDuChHtLo7My1HnQ" },
-  { name: "Anya Melfissa", channelId: "UC727SQYUvx5pDDGQpTICNWg" },
-  { name: "Pavolia Reine", channelId: "UChgTyjG-pdNvxxhdsXfHQ5Q" },
-  { name: "Kobo Kanaeru", channelId: "UCjLEmnpCNeisMxy134KPwWw" },
-  { name: "Vestia Zeta", channelId: "UCTvHWSfBZgtxE4sILOaurIQ" },
-  { name: "Kaela Kovalskia", channelId: "UCZLZ8Jjx_RN2CXloOmgTHVg" },
-  // Hololive EN
-  { name: "Ninomae Ina'nis", channelId: "UCMwGHR0BTZuLsmjY_NT5Pwg" },
-  { name: "Takanashi Kiara", channelId: "UCHsx4Hqa-1ORjQTh9TYDhww" },
-  { name: "Mori Calliope", channelId: "UCL_qhgtOy0dy1Agp8vkySQg" },
-  { name: "IRyS", channelId: "UC8rcEBzJSleTkf_-agPM20g" },
-  { name: "Watson Amelia", channelId: "UCyl1z3jo3XHR1riLFKG5UAg" },
-  { name: "Ouro Kronii", channelId: "UCmbs8T6MWqUHP1tIQvSgKrg" },
-  { name: "Hakos Baelz", channelId: "UCgmPnx-EEeOrZSg5Tiw7ZRQ" },
-  { name: "Shiori Novella", channelId: "UCgnfPPb9JI3e9A4cXHnWbyg" },
-  { name: "Koseki Bijou", channelId: "UC9p_lqQ0FEDz327Vgf5JwqA" },
-  { name: "Nerissa Ravencroft", channelId: "UC_sFNM0z0MWm9A6WlKPuMMg" },
-  { name: "FuwaMoco", channelId: "UCt9H_RpQzhxzlyBxFqrdHqA" },
-  { name: "Elizabeth Rose Bloodflame", channelId: "UCW5uhrG1eCBYditmhL0Ykjw" },
-  { name: "Gigi Murin", channelId: "UCDHABijvPBnJm7F-KlNME3w" },
-  { name: "Cecilia Immergreen", channelId: "UCvN5h1ShZtc7nly3pezRayg" },
-  { name: "Raora Panthera", channelId: "UCl69AEx4MdqMZH7Jtsm7Tig" },
+
 ];
 
 // Keywords to identify music videos and covers (English and Japanese)
@@ -240,8 +197,8 @@ async function postVideo(videoItem, videoDetails, channel, isCatchUp = false) {
 
 async function checkChannel(channel) {
   try {
-    // Get more results to catch up on missed videos (increased from 10 to 50)
-    const url = `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${channel.channelId}&part=snippet,id&order=date&maxResults=50&type=video`;
+    // Get results to catch up on missed videos (reduced to 2 to save API quota)
+    const url = `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${channel.channelId}&part=snippet,id&order=date&maxResults=2&type=video`;
 
     const res = await axios.get(url);
     
@@ -366,15 +323,25 @@ async function checkChannel(channel) {
   }
 }
 
-// Run every 5 minutes
-cron.schedule("*/5 * * * *", async () => {
+// Run every 15 minutes (reduced from 5 to save API quota)
+// This spreads out API calls and reduces quota usage significantly
+cron.schedule("*/15 * * * *", async () => {
+  console.log(`🔍 Checking ${YOUTUBE_CHANNELS.length} channels for new music videos...`);
   for (const channel of YOUTUBE_CHANNELS) {
     try {
       await checkChannel(channel);
+      // Add 2 second delay between channels to:
+      // 1. Avoid rate limiting from YouTube API
+      // 2. Spread out quota usage over time
+      // 3. Prevent overwhelming the API with rapid requests
+      await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (err) {
       console.error(`Error checking ${channel.name}`, err.message);
+      // Still add delay even on error to maintain consistent timing
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
   }
+  console.log(`✅ Finished checking all channels. Next check in 15 minutes.`);
 });
 
 client.login(DISCORD_TOKEN);
