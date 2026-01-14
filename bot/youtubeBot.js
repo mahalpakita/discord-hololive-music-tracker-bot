@@ -1,5 +1,5 @@
 require("dotenv").config({ path: "./dev.env" });
-const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
+const { Client, GatewayIntentBits } = require("discord.js");
 const axios = require("axios");
 const cron = require("node-cron");
 const fs = require("fs");
@@ -118,7 +118,6 @@ function isRegularVideo(item, details) {
   // Exclude YouTube Shorts
   const title = item.snippet.title.toLowerCase();
   const description = (item.snippet.description || "").toLowerCase();
-  const videoId = item.id.videoId;
   
   // Check for #shorts in title or description
   if (title.includes("#shorts") || description.includes("#shorts")) {
@@ -143,6 +142,11 @@ function isRegularVideo(item, details) {
         if (totalSeconds <= 60) {
           return false;
         }
+
+        // User request: don't post videos longer than 6 minutes
+        if (totalSeconds > 6 * 60) {
+          return false;
+        }
       }
     }
   }
@@ -150,7 +154,7 @@ function isRegularVideo(item, details) {
   return true; // It's a regular video
 }
 
-// Post a video with a beautiful embed
+// Post a simple message: channel name, title, link
 async function postVideo(videoItem, videoDetails, channel, isCatchUp = false) {
   const discordChannel = await client.channels.fetch(DISCORD_CHANNEL_ID);
   if (!discordChannel) {
@@ -160,39 +164,16 @@ async function postVideo(videoItem, videoDetails, channel, isCatchUp = false) {
   const videoId = videoItem.id.videoId;
   const snippet = videoDetails?.snippet || videoItem.snippet;
   const title = snippet.title;
-  const description = snippet.description || "";
-  const thumbnail = snippet.thumbnails?.maxres?.url || snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url;
-  const publishedAt = new Date(snippet.publishedAt);
   const videoUrl = `https://youtu.be/${videoId}`;
 
-  // Determine if it's a cover or original
-  const titleLower = title.toLowerCase();
-  const isCover = titleLower.includes("cover") || titleLower.includes("カバー") || 
-                  titleLower.includes("歌ってみた") || titleLower.includes("vocal cover");
-  
-  // Create embed
-  const embed = new EmbedBuilder()
-    .setColor(isCover ? 0xFF6B9D : 0x00D9FF) // Pink for covers, Cyan for originals
-    .setTitle(title)
-    .setURL(videoUrl)
-    .setAuthor({ 
-      name: channel.name
-    })
-    .setDescription(description.length > 200 ? description.substring(0, 200) + "..." : description || "No description available")
-    .setImage(thumbnail)
-    .addFields(
-      { name: "Type", value: isCover ? "🎵 Cover" : "🎶 Original Music", inline: true },
-      { name: "Published", value: `<t:${Math.floor(publishedAt.getTime() / 1000)}:R>`, inline: true },
-      { name: "Video", value: `[Watch on YouTube](${videoUrl})`, inline: true }
-    )
-    .setFooter({ text: isCatchUp ? "📬 Caught up on missed video" : "✨ New upload detected" })
-    .setTimestamp(publishedAt);
+  // Use <...> to prevent Discord from auto-embedding the link (keeps it clean)
+  // If you WANT the big playable preview, remove the < and >.
+  const message = `**${channel.name}**\n${title}\n<${videoUrl}>`;
 
-  // Send the YouTube URL first so Discord auto-embeds it and makes it playable
-  // Then send our custom embed for additional info
-  await discordChannel.send(videoUrl);
-  await discordChannel.send({ embeds: [embed] });
-  console.log(`✅ Posted ${isCover ? "cover" : "music video"} from ${channel.name}: ${title}`);
+  await discordChannel.send(message);
+  console.log(
+    `✅ Posted${isCatchUp ? " (catch-up)" : ""} from ${channel.name}: ${title}`
+  );
 }
 
 async function checkChannel(channel) {
